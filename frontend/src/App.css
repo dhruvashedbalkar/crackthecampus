@@ -3,6 +3,7 @@
 /* 1. Theme Variables */
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --color-critical: #ef4444;
 }
 
 [data-theme='light'] {
@@ -12,12 +13,14 @@
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
   --color-bg-healthy: #dcfce7;
-  --color-bg-anomaly: #fef08a; /* Yellow for High CPU */
-  --color-bg-degraded: #fed7aa; /* Orange for Degraded */
-  --color-bg-down: #fee2e2;    /* Red for Down */
+  --color-bg-anomaly: #fef08a;
+  --color-bg-degraded: #fed7aa;
+  --color-bg-down: #fee2e2;
   --color-dot-anomaly: #ef4444;
   --color-text-node: #111827;
   --color-button-bg: #e5e7eb;
+  --color-edge-default: #9ca3af;
+  --color-edge-failover: #22c55e;
 }
 
 [data-theme='dark'] {
@@ -27,12 +30,14 @@
   --color-text-secondary: #9ca3af;
   --color-border: #374151;
   --color-bg-healthy: #166534;
-  --color-bg-anomaly: #a16207; /* Dark Yellow */
-  --color-bg-degraded: #9a3412; /* Dark Orange */
-  --color-bg-down: #991b1b;    /* Dark Red */
+  --color-bg-anomaly: #a16207;
+  --color-bg-degraded: #9a3412;
+  --color-bg-down: #991b1b;
   --color-dot-anomaly: #f87171;
   --color-text-node: #f9fafb;
   --color-button-bg: #374151;
+  --color-edge-default: #6b7280;
+  --color-edge-failover: #4ade80;
 }
 
 
@@ -63,10 +68,45 @@ body {
   gap: 1.5rem;
   padding: 1.5rem;
   overflow: hidden;
+  height: calc(100vh - 150px); /* Adjust height to account for new panel */
+}
+
+/* 3. Business Impact Dashboard */
+.business-impact-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--color-bg-panel);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+.metric-icon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.metric-value.critical {
+  color: var(--color-critical);
+}
+.metric-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
 
-/* 3. Components */
+/* 4. Main Components */
 .graph-container {
   flex: 2;
   background-color: var(--color-bg-panel);
@@ -122,7 +162,7 @@ body {
 .controls-grid button.reset-button { background-color: var(--color-bg-degraded); color: #fff; }
 
 
-/* 4. Status Panel */
+/* 5. Status & Remediation Panels */
 .status-panel { padding: 0 1rem 1rem; border-top: 1px solid var(--color-border); margin-top: auto; }
 .status-panel h3 { font-size: 0.9rem; color: var(--color-text-secondary); }
 .status-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 0.5rem 0; }
@@ -134,17 +174,6 @@ body {
   color: var(--color-text-node);
 }
 
-/* 5. Theme Toggle & React Flow */
-.theme-toggle { /* ... (same as before) ... */ }
-.react-flow .react-flow__node {
-  font-size: 12px;
-  text-align: center;
-  white-space: pre-wrap; /* Allows line breaks in labels */
-  border-radius: 4px;
-  border: 1px solid var(--color-border) !important;
-}
-
-/* 6. Remediation Panel */
 .remediation-panel {
   padding: 1rem;
   margin: 1rem;
@@ -177,6 +206,45 @@ body {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-.remediation-button:hover {
-  background-color: #2563eb;
+.remediation-button:hover { background-color: #2563eb; }
+
+/* 6. Theme Toggle */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-bg-panel);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.theme-toggle:hover {
+  background-color: var(--color-border);
+  color: var(--color-text-primary);
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* 7. React Flow Customization */
+.react-flow .react-flow__edge-path { stroke-width: 2px; stroke: var(--color-edge-default); animation: none !important; }
+.react-flow__edge.react-flow__edge.react-flow__edge[id="e-db-sync"] .react-flow__edge-path { stroke-dasharray: 5 5; }
+.react-flow__edge.edge-failover .react-flow__edge-path { stroke: var(--color-edge-failover) !important; stroke-dasharray: none !important; }
+
+.react-flow .react-flow__node {
+  font-size: 12px;
+  text-align: center;
+  white-space: pre-wrap;
+  border-radius: 4px;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-node);
+}
+.react-flow .react-flow__node[data-id="load-balancer"] {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+}
+.react-flow__background {
+  background-color: var(--color-bg) !important;
 }
