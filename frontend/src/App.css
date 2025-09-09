@@ -143,3 +143,40 @@ body {
   border-radius: 4px;
   border: 1px solid var(--color-border) !important;
 }
+
+/* 6. Remediation Panel */
+.remediation-panel {
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+  background-color: var(--color-bg);
+  border: 1px dashed var(--color-bg-degraded);
+}
+.remediation-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+}
+.remediation-panel p {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 1rem 0;
+}
+.remediation-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background-color: #3b82f6; /* Blue */
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.remediation-button:hover {
+  background-color: #2563eb;
+}
