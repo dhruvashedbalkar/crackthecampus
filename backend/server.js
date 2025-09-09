@@ -29,6 +29,14 @@ let currentSystemState = {
   'db-replica': { status: 'healthy', cpu: 0.2, memory: 0.3, latency: 35, requests: 0 }
 };
 
+// Business impact metrics
+let businessMetrics = {
+  activeUsers: 10000,
+  revenuePerMinute: 5000,  // in dollars
+  errorRate: 0.01,         // 1%
+  lastUpdated: new Date()
+};
+
 // Historical data for analytics
 let systemHistory = [];
 
@@ -40,7 +48,8 @@ function recordSystemState() {
   // Add timestamp to current state
   const stateWithTimestamp = {
     timestamp: new Date(),
-    state: JSON.parse(JSON.stringify(currentSystemState))
+    state: JSON.parse(JSON.stringify(currentSystemState)),
+    businessMetrics: JSON.parse(JSON.stringify(businessMetrics))
   };
   
   systemHistory.push(stateWithTimestamp);
@@ -49,6 +58,59 @@ function recordSystemState() {
   if (systemHistory.length > MAX_HISTORY_LENGTH) {
     systemHistory.shift();
   }
+}
+
+// Function to update business metrics based on system state
+function updateBusinessMetrics() {
+  // Calculate how many services are healthy vs degraded/down
+  const services = Object.values(currentSystemState);
+  const totalServices = services.length;
+  const healthyServices = services.filter(s => s.status === 'healthy').length;
+  const anomalyServices = services.filter(s => s.status === 'anomaly').length;
+  const degradedServices = services.filter(s => s.status === 'degraded').length;
+  const downServices = services.filter(s => s.status === 'down').length;
+  
+  // Default values (healthy system)
+  let newActiveUsers = 10000;
+  let newRevenuePerMinute = 5000;
+  let newErrorRate = 0.01; // 1%
+  
+  // Adjust metrics based on system health
+  if (downServices > 0) {
+    // Critical failure - severe impact
+    const impactFactor = downServices / totalServices;
+    newActiveUsers = Math.floor(10000 * (1 - impactFactor * 0.9)); // Up to 90% user loss
+    newRevenuePerMinute = Math.floor(5000 * (1 - impactFactor));
+    newErrorRate = Math.min(1, 0.01 + impactFactor * 0.99); // Up to 100% error rate
+    
+    // If load balancer or all APIs are down, complete outage
+    if (currentSystemState['load-balancer'].status === 'down' || 
+        (currentSystemState['api-1'].status === 'down' && currentSystemState['api-2'].status === 'down')) {
+      newActiveUsers = 0;
+      newRevenuePerMinute = 0;
+      newErrorRate = 1.0; // 100% error rate
+    }
+  } else if (degradedServices > 0) {
+    // Degraded service - moderate impact
+    const impactFactor = degradedServices / totalServices;
+    newActiveUsers = Math.floor(10000 * (1 - impactFactor * 0.5)); // Up to 50% user loss
+    newRevenuePerMinute = Math.floor(5000 * (1 - impactFactor * 0.6));
+    newErrorRate = Math.min(1, 0.01 + impactFactor * 0.5); // Up to 51% error rate
+  } else if (anomalyServices > 0) {
+    // Anomaly - minor impact
+    const impactFactor = anomalyServices / totalServices;
+    newActiveUsers = Math.floor(10000 * (1 - impactFactor * 0.2)); // Up to 20% user loss
+    newRevenuePerMinute = Math.floor(5000 * (1 - impactFactor * 0.15));
+    newErrorRate = Math.min(1, 0.01 + impactFactor * 0.2); // Up to 21% error rate
+  }
+  
+  // Update business metrics
+  businessMetrics = {
+    activeUsers: newActiveUsers,
+    revenuePerMinute: newRevenuePerMinute,
+    errorRate: newErrorRate,
+    lastUpdated: new Date()
+  };
 }
 
 // Flag to track if we're in a simulated failure state
@@ -95,6 +157,11 @@ function resolveIncident(type) {
 // This block runs whenever a new user connects to our server
 io.on('connection', (socket) => {
   console.log('✅ A user connected');
+
+  // Send initial system state and business metrics
+  socket.emit('system-update', currentSystemState);
+  socket.emit('business-metrics', businessMetrics);
+  socket.emit('incidents-update', incidents);
 
   // Handle simulation triggers from frontend
   socket.on('trigger-simulation', (data) => {
@@ -187,7 +254,11 @@ io.on('connection', (socket) => {
             clearInterval(memoryLeakInterval);
           }
           
+          // Update business metrics based on system state
+          updateBusinessMetrics();
+          
           io.emit('system-update', currentSystemState);
+          io.emit('business-metrics', businessMetrics);
         }, 5000); // Increase every 5 seconds
         break;
         
@@ -206,7 +277,9 @@ io.on('connection', (socket) => {
             currentSystemState['api-1'].status = 'down';
             currentSystemState['api-1'].cpu = 0;
             currentSystemState['api-1'].memory = 0;
+            updateBusinessMetrics();
             io.emit('system-update', currentSystemState);
+            io.emit('business-metrics', businessMetrics);
           }
         }, 3000);
         
@@ -216,7 +289,9 @@ io.on('connection', (socket) => {
             currentSystemState['api-2'].status = 'down';
             currentSystemState['api-2'].cpu = 0;
             currentSystemState['api-2'].memory = 0;
+            updateBusinessMetrics();
             io.emit('system-update', currentSystemState);
+            io.emit('business-metrics', businessMetrics);
           }
         }, 6000);
         
@@ -229,7 +304,9 @@ io.on('connection', (socket) => {
             currentSystemState['db-replica'].status = 'down';
             currentSystemState['db-replica'].cpu = 0;
             currentSystemState['db-replica'].memory = 0;
+            updateBusinessMetrics();
             io.emit('system-update', currentSystemState);
+            io.emit('business-metrics', businessMetrics);
           }
         }, 10000);
         break;
@@ -260,8 +337,12 @@ io.on('connection', (socket) => {
     // Record the state for historical data
     recordSystemState();
     
+    // Update business metrics based on system state
+    updateBusinessMetrics();
+    
     // Immediately emit the updated state after simulation
     io.emit('system-update', currentSystemState);
+    io.emit('business-metrics', businessMetrics);
     
     // Also emit the updated incidents list
     io.emit('incidents-update', incidents);
@@ -356,9 +437,13 @@ setInterval(() => {
 
   // Record the state for historical data
   recordSystemState();
+  
+  // Update business metrics based on system state
+  updateBusinessMetrics();
 
   // Emit the system state to all connected clients
   io.emit('system-update', currentSystemState);
+  io.emit('business-metrics', businessMetrics);
   
   // Also emit the updated incidents list (every 10 seconds to reduce traffic)
   if (Math.random() < 0.2) {

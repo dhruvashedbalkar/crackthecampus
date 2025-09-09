@@ -5,7 +5,7 @@ import ReactFlow, { Controls, Background } from 'reactflow';
 import 'reactflow/dist/style.css';
 import io from 'socket.io-client';
 import './App.css';
-import { Sun, Moon, Zap, Cpu, Database, ServerCrash, RotateCcw, Activity, AlertTriangle, Clock, BarChart2, Users, Layers, RefreshCw } from 'lucide-react';
+import { Sun, Moon, Zap, Cpu, Database, ServerCrash, RotateCcw, Activity, AlertTriangle, Clock, BarChart2, Users, Layers, RefreshCw, DollarSign, AlertCircle } from 'lucide-react';
 
 const socket = io('http://localhost:4001', {
   reconnectionAttempts: 5,
@@ -61,6 +61,12 @@ function App() {
   const [incidents, setIncidents] = useState([]);
   const [systemHistory, setSystemHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, incidents, analytics
+  const [businessMetrics, setBusinessMetrics] = useState({
+    activeUsers: 10000,
+    revenuePerMinute: 5000,
+    errorRate: 0.01,
+    lastUpdated: new Date()
+  });
 
   const handleSystemUpdate = useCallback((systemState) => {
     setLatestUpdate(systemState); // Store the latest full state
@@ -111,6 +117,11 @@ function App() {
   const handleHistoryUpdate = useCallback((historyData) => {
     setSystemHistory(historyData);
   }, []);
+  
+  // Handle business metrics updates
+  const handleBusinessMetricsUpdate = useCallback((metrics) => {
+    setBusinessMetrics(metrics);
+  }, []);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
@@ -127,6 +138,7 @@ function App() {
     socket.on('system-update', handleSystemUpdate);
     socket.on('incidents-update', handleIncidentsUpdate);
     socket.on('history-update', handleHistoryUpdate);
+    socket.on('business-metrics', handleBusinessMetricsUpdate);
     
     return () => {
       socket.off('connect');
@@ -134,16 +146,40 @@ function App() {
       socket.off('system-update', handleSystemUpdate);
       socket.off('incidents-update', handleIncidentsUpdate);
       socket.off('history-update', handleHistoryUpdate);
+      socket.off('business-metrics', handleBusinessMetricsUpdate);
     };
-  }, [isDarkMode, handleSystemUpdate, handleIncidentsUpdate, handleHistoryUpdate]);
+  }, [isDarkMode, handleSystemUpdate, handleIncidentsUpdate, handleHistoryUpdate, handleBusinessMetricsUpdate]);
 
   const triggerSimulation = (type) => {
     socket.emit('trigger-simulation', { type });
   };
 
+  // Render the business impact dashboard
+  const renderBusinessImpactDashboard = () => (
+    <div className="business-impact-dashboard">
+      <h2><DollarSign size={18} /> Business Impact Dashboard</h2>
+      <div className="business-metrics-grid">
+        <div className="metric-card">
+          <h3><Users size={16} /> Active Users</h3>
+          <div className="metric-value">{businessMetrics.activeUsers.toLocaleString()}</div>
+        </div>
+        <div className="metric-card">
+          <h3><DollarSign size={16} /> Revenue / minute</h3>
+          <div className="metric-value">${businessMetrics.revenuePerMinute.toLocaleString()}</div>
+        </div>
+        <div className="metric-card">
+          <h3><AlertCircle size={16} /> Error Rate</h3>
+          <div className="metric-value">{(businessMetrics.errorRate * 100).toFixed(1)}%</div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Render the dashboard tab content
   const renderDashboard = () => (
     <>
+      {renderBusinessImpactDashboard()}
+      
       <div className="graph-container">
         <ReactFlow nodes={nodes} edges={initialEdges} fitView>
           <Background />
