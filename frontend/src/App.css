@@ -12,12 +12,18 @@
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
   --color-bg-healthy: #dcfce7;
-  --color-bg-anomaly: #fef08a; /* Yellow for High CPU */
+  --color-bg-anomaly: #fef08a; /* Yellow for High Load */
   --color-bg-degraded: #fed7aa; /* Orange for Degraded */
   --color-bg-down: #fee2e2;    /* Red for Down */
   --color-dot-anomaly: #ef4444;
   --color-text-node: #111827;
   --color-button-bg: #e5e7eb;
+  --color-active-tab: #3b82f6;
+  --color-badge: #ef4444;
+  --color-card-bg: #ffffff;
+  --color-metric-value: #1e40af;
+  --color-timeline-active: #fef08a;
+  --color-timeline-resolved: #dcfce7;
 }
 
 [data-theme='dark'] {
@@ -33,6 +39,12 @@
   --color-dot-anomaly: #f87171;
   --color-text-node: #f9fafb;
   --color-button-bg: #374151;
+  --color-active-tab: #3b82f6;
+  --color-badge: #ef4444;
+  --color-card-bg: #1f2937;
+  --color-metric-value: #60a5fa;
+  --color-timeline-active: #a16207;
+  --color-timeline-resolved: #166534;
 }
 
 
@@ -57,6 +69,52 @@ body {
 }
 .app-header h1 { display: flex; align-items: center; font-size: 1.5rem; margin: 0; }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.main-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.main-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+
+.main-nav button.active {
+  color: var(--color-active-tab);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--color-badge);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .main-content {
   display: flex;
   flex-grow: 1;
@@ -74,7 +132,9 @@ body {
   border: 1px solid var(--color-border);
 }
 
-.controls-container {
+.controls-container,
+.incidents-container,
+.analytics-container {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -82,6 +142,8 @@ body {
   border-radius: 8px;
   border: 1px solid var(--color-border);
   overflow: hidden;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
 }
 
 .controls-container h2 {
@@ -134,12 +196,255 @@ body {
   color: var(--color-text-node);
 }
 
+.metrics-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.metric-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-node);
+  background-color: var(--color-button-bg);
+}
+
 /* 5. Theme Toggle & React Flow */
-.theme-toggle { /* ... (same as before) ... */ }
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+.theme-toggle:hover { background-color: var(--color-button-bg); }
+
 .react-flow .react-flow__node {
   font-size: 12px;
   text-align: center;
   white-space: pre-wrap; /* Allows line breaks in labels */
   border-radius: 4px;
   border: 1px solid var(--color-border) !important;
+}
+
+/* 6. Incidents Timeline */
+.incidents-container {
+  padding: 1rem;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.timeline-item {
+  background-color: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item.active {
+  border-left: 4px solid var(--color-bg-anomaly);
+  background-color: var(--color-timeline-active);
+}
+
+.timeline-item.resolved {
+  border-left: 4px solid var(--color-bg-healthy);
+  background-color: var(--color-timeline-resolved);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.incident-status {
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+.incident-status.active {
+  background-color: var(--color-bg-anomaly);
+  color: var(--color-text-node);
+}
+
+.incident-status.resolved {
+  background-color: var(--color-bg-healthy);
+  color: var(--color-text-node);
+}
+
+.timeline-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.timeline-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.affected-services h4 {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.service-tag {
+  background-color: var(--color-button-bg);
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* 7. Analytics */
+.analytics-container {
+  padding: 1rem;
+}
+
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.metrics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metric-card {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-card h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: var(--color-metric-value);
+}
+
+.metric-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.history-preview {
+  margin-top: 1rem;
+}
+
+.history-preview h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+}
+
+.history-time {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  min-width: 80px;
+}
+
+.history-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.history-service-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.history-service-status.healthy {
+  background-color: var(--color-bg-healthy);
+  color: var(--color-text-node);
+}
+
+.history-service-status.anomaly {
+  background-color: var(--color-bg-anomaly);
+  color: var(--color-text-node);
+}
+
+.history-service-status.degraded {
+  background-color: var(--color-bg-degraded);
+  color: var(--color-text-node);
+}
+
+.history-service-status.down {
+  background-color: var(--color-bg-down);
+  color: var(--color-text-node);
 }
