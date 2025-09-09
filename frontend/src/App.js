@@ -1,80 +1,90 @@
-// src/App.js
+// frontend/src/App.js
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactFlow, { MiniMap, Controls, Background } from 'reactflow';
 import 'reactflow/dist/style.css';
 import io from 'socket.io-client';
 import './App.css';
-import { Sun, Moon } from 'lucide-react'; // A nice icon library for the toggle
+import { Sun, Moon, Zap, Cpu, Database, ServerCrash, RotateCcw } from 'lucide-react';
 
-// Establish connection to the backend server
 const socket = io('http://localhost:4001');
 
-// Define the initial nodes for our graph
+// 1. Define the new, more complex architecture
 const initialNodes = [
-  { id: 'frontend', position: { x: 50, y: 150 }, data: { label: 'Frontend Service' }, type: 'input' },
-  { id: 'api', position: { x: 300, y: 150 }, data: { label: 'API Service' } },
-  { id: 'db', position: { x: 550, y: 150 }, data: { label: 'Database' }, type: 'output' },
+  { id: 'load-balancer', type: 'input', position: { x: 0, y: 150 }, data: { label: 'Load Balancer' } },
+  { id: 'api-1', position: { x: 250, y: 75 }, data: { label: 'API Service 1' } },
+  { id: 'api-2', position: { x: 250, y: 225 }, data: { label: 'API Service 2' } },
+  { id: 'db-primary', type: 'output', position: { x: 500, y: 75 }, data: { label: 'Primary DB' } },
+  { id: 'db-replica', type: 'output', position: { x: 500, y: 225 }, data: { label: 'Replica DB' } },
 ];
 
-// Define the initial edges (the lines connecting the nodes)
 const initialEdges = [
-  { id: 'e1-2', source: 'frontend', target: 'api', animated: true, style: { strokeWidth: 2 } },
-  { id: 'e2-3', source: 'api', target: 'db', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-lb-a1', source: 'load-balancer', target: 'api-1', animated: true },
+  { id: 'e-lb-a2', source: 'load-balancer', target: 'api-2', animated: true },
+  { id: 'e-a1-db', source: 'api-1', target: 'db-primary', animated: true },
+  { id: 'e-a2-db', source: 'api-2', target: 'db-primary', animated: true },
+  { id: 'e-db-sync', source: 'db-primary', target: 'db-replica', label: 'sync' },
 ];
 
+// 2. Map service statuses to UI styles
+const statusStyles = {
+  healthy: { background: 'var(--color-bg-healthy)', label: 'Healthy' },
+  anomaly: { background: 'var(--color-bg-anomaly)', label: 'High CPU' },
+  degraded: { background: 'var(--color-bg-degraded)', label: 'Degraded' },
+  down: { background: 'var(--color-bg-down)', label: 'Down' },
+};
 
 function App() {
   const [nodes, setNodes] = useState(initialNodes);
-  const [logs, setLogs] = useState([]);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [latestUpdate, setLatestUpdate] = useState(null);
 
-  const handleLog = useCallback((log) => {
-    // Add the new log to the beginning of the array, keeping only the latest 20
-    setLogs(prevLogs => [log, ...prevLogs].slice(0, 20));
+  const handleSystemUpdate = useCallback((systemState) => {
+    setLatestUpdate(systemState); // Store the latest full state
+    
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+        const serviceState = systemState[node.id];
+        if (serviceState) {
+          const style = statusStyles[serviceState.status] || {};
+          let label = node.data.initialLabel || node.data.label;
 
-    // Update the visual state of the API node
-    if (log.serviceName === 'API') {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          if (node.id === 'api') {
-            const isAnomaly = log.status === 'anomaly';
-            return {
-              ...node,
-              data: { label: `API Service\nCPU: ${(log.cpu_usage * 100).toFixed(0)}%` },
-              style: { 
-                ...node.style, 
-                background: isAnomaly ? 'var(--color-bg-anomaly)' : 'var(--color-bg-healthy)',
-                color: 'var(--color-text-node)',
-              },
-            };
+          if (serviceState.cpu) {
+            label += `\nCPU: ${(serviceState.cpu * 100).toFixed(0)}%`;
           }
-          return node;
-        })
-      );
-    }
+
+          return {
+            ...node,
+            data: { ...node.data, label, initialLabel: node.data.initialLabel || node.data.label },
+            style: {
+              ...node.style,
+              background: style.background,
+              color: 'var(--color-text-node)',
+              border: serviceState.status === 'down' ? '2px dashed var(--color-dot-anomaly)' : '1px solid var(--color-border)',
+            },
+          };
+        }
+        return node;
+      })
+    );
   }, []);
 
   useEffect(() => {
-    // Set the data-theme attribute on the body for CSS to pick up
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-
-    // Listen for 'new-log' events from the server
-    socket.on('new-log', handleLog);
-
-    // Clean up the socket connection when the component unmounts
+    socket.on('system-update', handleSystemUpdate);
     return () => {
-      socket.off('new-log', handleLog);
+      socket.off('system-update', handleSystemUpdate);
     };
-  }, [isDarkMode, handleLog]);
-  
-  // Find the latest anomaly to display a persistent recommendation
-  const latestAnomaly = logs.find(log => log.status === 'anomaly');
+  }, [isDarkMode, handleSystemUpdate]);
+
+  const triggerSimulation = (type) => {
+    socket.emit('trigger-simulation', { type });
+  };
 
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Resilio: IT Outage Simulator</h1>
+        <h1><Zap size={24} style={{ marginRight: '10px' }}/>Resilio</h1>
         <button onClick={() => setIsDarkMode(!isDarkMode)} className="theme-toggle">
           {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
@@ -82,36 +92,45 @@ function App() {
 
       <main className="main-content">
         <div className="graph-container">
-           <ReactFlow 
-            nodes={nodes} 
-            edges={initialEdges} 
-            fitView
-            nodesDraggable={false}
-            nodesConnectable={false}
-          >
+          <ReactFlow nodes={nodes} edges={initialEdges} fitView>
             <Background />
             <Controls />
           </ReactFlow>
         </div>
 
-        <div className="log-container">
-          <h2>Live Logs</h2>
-          {latestAnomaly && (
-            <div className="recommendation-banner">
-              <strong>Active Alert:</strong>
-              <p>CPU &gt; 80% Detected. Suggested Action: Scale API Service by +1 instance.</p>
-            </div>
-          )}
-          <div className="log-list">
-            {logs.map((log, index) => (
-              <div key={index} className={`log-item ${log.status}`}>
-                <span className="log-status-dot"></span>
-                <span className="log-time">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                <span className="log-message">
-                  {log.serviceName} - CPU at <strong>{(log.cpu_usage * 100).toFixed(0)}%</strong>
-                </span>
-              </div>
-            ))}
+        <div className="controls-container">
+          <h2><ServerCrash size={18} /> Simulation Controls</h2>
+          <div className="controls-grid">
+            <button onClick={() => triggerSimulation('CPU_OVERLOAD')}>
+              <Cpu size={16} /> Trigger High CPU on API-1
+            </button>
+            <button onClick={() => triggerSimulation('API_FAILURE')}>
+              <ServerCrash size={16} /> Kill API-2
+            </button>
+            <button onClick={() => triggerSimulation('DB_FAILURE')}>
+              <Database size={16} /> Kill Primary DB
+            </button>
+            <button className="reset-button" onClick={() => triggerSimulation('RESET')}>
+              <RotateCcw size={16} /> Reset System
+            </button>
+          </div>
+          
+          <div className="status-panel">
+            <h3>System Status</h3>
+            {latestUpdate && Object.entries(latestUpdate).map(([key, value]) => {
+              if (typeof value === 'object' && value !== null) {
+                const style = statusStyles[value.status] || {};
+                return (
+                  <div key={key} className="status-item">
+                    <span>{key}</span>
+                    <span className="status-badge" style={{ backgroundColor: style.background }}>
+                      {style.label}
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })}
           </div>
         </div>
       </main>

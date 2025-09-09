@@ -12,12 +12,12 @@
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
   --color-bg-healthy: #dcfce7;
-  --color-bg-anomaly: #fee2e2;
-  --color-dot-healthy: #22c55e;
+  --color-bg-anomaly: #fef08a; /* Yellow for High CPU */
+  --color-bg-degraded: #fed7aa; /* Orange for Degraded */
+  --color-bg-down: #fee2e2;    /* Red for Down */
   --color-dot-anomaly: #ef4444;
   --color-text-node: #111827;
-  --color-recommendation-bg: #fefce8;
-  --color-recommendation-border: #facc15;
+  --color-button-bg: #e5e7eb;
 }
 
 [data-theme='dark'] {
@@ -27,12 +27,12 @@
   --color-text-secondary: #9ca3af;
   --color-border: #374151;
   --color-bg-healthy: #166534;
-  --color-bg-anomaly: #991b1b;
-  --color-dot-healthy: #4ade80;
+  --color-bg-anomaly: #a16207; /* Dark Yellow */
+  --color-bg-degraded: #9a3412; /* Dark Orange */
+  --color-bg-down: #991b1b;    /* Dark Red */
   --color-dot-anomaly: #f87171;
   --color-text-node: #f9fafb;
-  --color-recommendation-bg: #451a03;
-  --color-recommendation-border: #f59e0b;
+  --color-button-bg: #374151;
 }
 
 
@@ -45,11 +45,7 @@ body {
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
+.app-container { display: flex; flex-direction: column; height: 100vh; }
 
 .app-header {
   display: flex;
@@ -59,31 +55,27 @@ body {
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
-
-.app-header h1 {
-  font-size: 1.25rem;
-  margin: 0;
-}
+.app-header h1 { display: flex; align-items: center; font-size: 1.5rem; margin: 0; }
 
 .main-content {
   display: flex;
   flex-grow: 1;
   gap: 1.5rem;
   padding: 1.5rem;
-  overflow: hidden; /* Prevent scrolling on the main layout */
+  overflow: hidden;
 }
 
 
 /* 3. Components */
 .graph-container {
-  flex: 2; /* Takes 2/3 of the space */
+  flex: 2;
   background-color: var(--color-bg-panel);
   border-radius: 8px;
   border: 1px solid var(--color-border);
 }
 
-.log-container {
-  flex: 1; /* Takes 1/3 of the space */
+.controls-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg-panel);
@@ -92,7 +84,10 @@ body {
   overflow: hidden;
 }
 
-.log-container h2 {
+.controls-container h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1rem;
   padding: 0.75rem 1rem;
   margin: 0;
@@ -100,71 +95,51 @@ body {
   color: var(--color-text-secondary);
 }
 
-.log-list {
-  flex-grow: 1;
-  overflow-y: auto; /* Make only the list scrollable */
-  padding: 0.5rem;
-}
-
-.log-item {
-  display: flex;
-  align-items: center;
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
+  padding: 1rem;
 }
 
-.log-item.healthy { background-color: transparent; }
-.log-item.anomaly { background-color: var(--color-bg-anomaly); }
-
-.log-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.log-item.healthy .log-status-dot { background-color: var(--color-dot-healthy); }
-.log-item.anomaly .log-status-dot { background-color: var(--color-dot-anomaly); }
-
-
-.log-time {
-  color: var(--color-text-secondary);
-}
-
-.recommendation-banner {
-  padding: 0.75rem 1rem;
-  background-color: var(--color-recommendation-bg);
-  border-bottom: 1px solid var(--color-recommendation-border);
-}
-.recommendation-banner strong { font-size: 0.9rem; }
-.recommendation-banner p { margin: 0.25rem 0 0; font-size: 0.85rem; }
-
-
-/* 4. Theme Toggle Button */
-.theme-toggle {
-  background: var(--color-bg-panel);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
+.controls-grid button {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--color-button-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: transform 0.1s ease;
 }
-.theme-toggle:hover {
-  border-color: var(--color-text-primary);
-}
+.controls-grid button:hover { background-color: var(--color-border); }
+.controls-grid button:active { transform: scale(0.98); }
+.controls-grid button.reset-button { background-color: var(--color-bg-degraded); color: #fff; }
 
 
-/* 5. React Flow Customization */
+/* 4. Status Panel */
+.status-panel { padding: 0 1rem 1rem; border-top: 1px solid var(--color-border); margin-top: auto; }
+.status-panel h3 { font-size: 0.9rem; color: var(--color-text-secondary); }
+.status-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 0.5rem 0; }
+.status-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-node);
+}
+
+/* 5. Theme Toggle & React Flow */
+.theme-toggle { /* ... (same as before) ... */ }
 .react-flow .react-flow__node {
   font-size: 12px;
-  border-width: 2px !important;
-  border-color: var(--color-border) !important;
+  text-align: center;
+  white-space: pre-wrap; /* Allows line breaks in labels */
+  border-radius: 4px;
+  border: 1px solid var(--color-border) !important;
 }
-
-/* We need this one last package for the icons */
