@@ -1,13 +1,17 @@
 // frontend/src/App.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import ReactFlow, { MiniMap, Controls, Background } from 'reactflow';
+import ReactFlow, { Controls, Background } from 'reactflow';
 import 'reactflow/dist/style.css';
 import io from 'socket.io-client';
 import './App.css';
 import { Sun, Moon, Zap, Cpu, Database, ServerCrash, RotateCcw } from 'lucide-react';
 
-const socket = io('http://localhost:4001');
+const socket = io('http://localhost:4001', {
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  transports: ['websocket', 'polling']
+});
 
 // 1. Define the new, more complex architecture
 const initialNodes = [
@@ -71,8 +75,21 @@ function App() {
 
   useEffect(() => {
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    
+    // Add socket connection event listeners for debugging
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+    
     socket.on('system-update', handleSystemUpdate);
+    
     return () => {
+      socket.off('connect');
+      socket.off('connect_error');
       socket.off('system-update', handleSystemUpdate);
     };
   }, [isDarkMode, handleSystemUpdate]);
