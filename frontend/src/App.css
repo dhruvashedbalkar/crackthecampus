@@ -1,24 +1,170 @@
 /* src/App.css */
-.App {
-  text-align: center;
-  font-family: sans-serif;
-  padding: 20px;
+
+/* 1. Theme Variables */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
-.recommendation-popup {
-  position: absolute;
-  top: 80px;
-  right: 20px;
-  background-color: #fff8e1;
-  border: 1px solid #ffc107;
+[data-theme='light'] {
+  --color-bg: #f0f2f5;
+  --color-bg-panel: #ffffff;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-bg-healthy: #dcfce7;
+  --color-bg-anomaly: #fee2e2;
+  --color-dot-healthy: #22c55e;
+  --color-dot-anomaly: #ef4444;
+  --color-text-node: #111827;
+  --color-recommendation-bg: #fefce8;
+  --color-recommendation-border: #facc15;
+}
+
+[data-theme='dark'] {
+  --color-bg: #111827;
+  --color-bg-panel: #1f2937;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-border: #374151;
+  --color-bg-healthy: #166534;
+  --color-bg-anomaly: #991b1b;
+  --color-dot-healthy: #4ade80;
+  --color-dot-anomaly: #f87171;
+  --color-text-node: #f9fafb;
+  --color-recommendation-bg: #451a03;
+  --color-recommendation-border: #f59e0b;
+}
+
+
+/* 2. Base & Layout */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.main-content {
+  display: flex;
+  flex-grow: 1;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  overflow: hidden; /* Prevent scrolling on the main layout */
+}
+
+
+/* 3. Components */
+.graph-container {
+  flex: 2; /* Takes 2/3 of the space */
+  background-color: var(--color-bg-panel);
   border-radius: 8px;
-  padding: 15px;
-  z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 250px;
-  text-align: left;
+  border: 1px solid var(--color-border);
 }
 
-.recommendation-popup p {
-  margin: 5px 0 0;
+.log-container {
+  flex: 1; /* Takes 1/3 of the space */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-panel);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
 }
+
+.log-container h2 {
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.log-list {
+  flex-grow: 1;
+  overflow-y: auto; /* Make only the list scrollable */
+  padding: 0.5rem;
+}
+
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.log-item.healthy { background-color: transparent; }
+.log-item.anomaly { background-color: var(--color-bg-anomaly); }
+
+.log-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.log-item.healthy .log-status-dot { background-color: var(--color-dot-healthy); }
+.log-item.anomaly .log-status-dot { background-color: var(--color-dot-anomaly); }
+
+
+.log-time {
+  color: var(--color-text-secondary);
+}
+
+.recommendation-banner {
+  padding: 0.75rem 1rem;
+  background-color: var(--color-recommendation-bg);
+  border-bottom: 1px solid var(--color-recommendation-border);
+}
+.recommendation-banner strong { font-size: 0.9rem; }
+.recommendation-banner p { margin: 0.25rem 0 0; font-size: 0.85rem; }
+
+
+/* 4. Theme Toggle Button */
+.theme-toggle {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-toggle:hover {
+  border-color: var(--color-text-primary);
+}
+
+
+/* 5. React Flow Customization */
+.react-flow .react-flow__node {
+  font-size: 12px;
+  border-width: 2px !important;
+  border-color: var(--color-border) !important;
+}
+
+/* We need this one last package for the icons */
